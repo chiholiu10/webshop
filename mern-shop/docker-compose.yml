@@ -1,0 +1,43 @@
+version: "3.9"
+
+services: 
+  server: 
+    build: 
+      network: host
+      context: ./serverside
+      dockerfile: Dockerfile
+    image: myapp-server
+    container_name: myapp-node-server
+    restart: always
+    volumes: 
+      - ./serverside/:/usr/src/App
+      - /usr/src/App/node_modules
+    ports:
+        - "8080:8080"
+    depends_on:
+      - mongo
+    env_file: ./serverside/.env
+    environment:
+      - NODE_ENV=development
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+  stripe-cli:
+    image: stripe/stripe-cli
+    container_name: stripe-cli
+  client:
+    build:
+      network: host
+      context: ./clientside
+      dockerfile: Dockerfile
+    image: myapp-client
+    container_name: myapp-react-client
+    restart: always
+    volumes:
+      - ./clientside/:/usr/src/App
+      - /usr/src/App/node_modules
+    depends_on:
+      - server
+    ports:
+      - "3000:3000"

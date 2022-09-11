@@ -1,0 +1,24 @@
+# POST http://localhost:8080/token 
+# Content-Type: application/json
+# Accept: application/json
+# Access-Control-Allow-Origin: *
+
+# {
+#   "cookie": true
+# }
+
+
+# GET http://localhost:8080
+
+# Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NjIwNzA5NDUsImV4cCI6MTY5MzYyODU0NSwiYXVkIjoiYm9iIn0.mgORpHSusUFHUI0hOqngjD-V5CM741gdxJ6u4ouSuWQ
+
+# POST http://localhost:8080/login
+# Content-Type: application/json
+
+# {
+#   "username": "bob",
+#   "password": "bob"
+# }
+
+
+POST http://localhost:8080/logout
