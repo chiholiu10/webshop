@@ -89,11 +89,6 @@ const generateAccessToken = (signinData) => {
 app.post("/forget-password", async (request, response) => {
   const { email } = request.body;
   await User.findOne({ email: email }).then((user) => {
-    if (!user && email !== user?.email) {
-      response.status(401).send("Email not exists");
-      return;
-    }
-
     const JWT_SECRET = "super secret";
     const secret = JWT_SECRET + user.password;
 
@@ -106,6 +101,8 @@ app.post("/forget-password", async (request, response) => {
     const link = `http://localhost:3000/reset-password/${user.id}/${token}`;
     console.log(link);
     response.status(200).json({ "message": `Reset password link has been sent to ${email}, please check your inbox ` + link });
+  }).catch((err) => {
+    response.status(401).send("Email not exists");
   });
 });
 
@@ -113,71 +110,55 @@ app.get("/reset-password/:id/:token", (request, response) => {
   const { id, token } = request.params;
   const { password } = request.body;
   User.findOne({ _id: id }).then(user => {
-    if (id !== String(user._id)) {
-      response.send("Invalid id...");
-    } else {
-      const JWT_SECRET = "super secret";
-      const secret = JWT_SECRET + user.password;
-      try {
-        const payload = jwt.verify(token, secret);
-        console.log(payload);
-        user.password = password;
-        response.status(200).json({ "message": "Password successfully changed" });
-      } catch (error) {
-        response.status(401).json({ "message": "Something went wrong. Try again please" });
-      }
-    }
+    const JWT_SECRET = "super secret";
+    const secret = JWT_SECRET + user.password;
+    const payload = jwt.verify(token, secret);
+
+    console.log(payload);
+    user.password = password;
+    response.status(200).json({ "message": "Password successfully changed" });
+  }).catch((err) => {
+    response.status(401).json({ "message": "Something went wrong. Try again please" });
   });
 });
 
-
-app.post("/reset-password/:id/:token", (request, response) => {
+app.post("/reset-password/:id/:token", async (request, response) => {
   const { id, token } = request.params;
   const { password } = request.body;
   User.findOne({ _id: id }).then(user => {
-    if (id !== String(user._id)) {
-      response.status(401).json("Invalid id...");
-    } else {
-      console.log('hello');
-      const JWT_SECRET = "super secret";
-      const secret = JWT_SECRET + user.password;
-      try {
-        const payload = jwt.verify(token, secret);
-        console.log(payload);
-        user.password = password;
-        response.status(200).json({ "message": "Password successfully changed" });
-      } catch (error) {
-        response.status(401).json({ "message": "Something went wrong. Try again please" });
-      }
-    }
+    const JWT_SECRET = "super secret";
+    const secret = JWT_SECRET + user.password;
+
+    const payload = jwt.verify(token, secret);
+    console.log(payload);
+    user.password = password;
+    response.status(200).json({ "message": "Password successfully changed" });
+  }).catch((err) => {
+    console.log(err);
+    response.status(401).json({ "message": "Something went wrong. Try another url please" });
   });
 });
 
 app.post("/login", (request, response) => {
   const { username, password } = request.body;
   User.findOne({ username: username }).then((user) => {
-    if (user && bcrypt.compare(password, user.password)) {
-      const token = generateAccessToken({ username: user.username, password: user.password });
-      const expireDate = new Date(Date.now() + (30 * 86400 * 100));
-      response.cookie('access_token', token, {
-        expires: expireDate,
-        httpOnly: true,
-        secure: true,
-        sameSite: "none"
-      }).cookie("checkToken", true, {
-        expires: expireDate,
-        secure: true,
-        sameSite: "none"
-      });
-      console.log('hello');
-      const refreshToken = jwt.sign(user.username, process.env.REFRESH_TOKEN_SECRET);
+    const token = generateAccessToken({ username: user.username, password: user.password });
+    const expireDate = new Date(Date.now() + (30 * 86400 * 100));
+    response.cookie('access_token', token, {
+      expires: expireDate,
+      httpOnly: true,
+      secure: true,
+      sameSite: "none"
+    }).cookie("checkToken", true, {
+      expires: expireDate,
+      secure: true,
+      sameSite: "none"
+    });
 
-      // console.log(token, refreshToken);
-      response.status(200).header('Access-Control-Allow-Credentials', true, "auth-token", token).json({ "token": token, "refreshToken": refreshToken });
-    } else {
-      console.log("Invalid password");
-      response.status(401).send("Invalid Credentials");
-    }
+    const refreshToken = jwt.sign(user.username, process.env.REFRESH_TOKEN_SECRET);
+    response.status(200).header('Access-Control-Allow-Credentials', true, "auth-token", token).json({ "token": token, "refreshToken": refreshToken });
+  }).catch((err) => {
+    response.status(401).send("Invalid Credentials");
   });
 });
 
@@ -212,7 +193,5 @@ app.post('/register', async (request, response) => {
     response.status(400).json({ message: "User not added" });
   }
 });
-
-
 
 module.exports = app;

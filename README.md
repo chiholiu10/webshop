@@ -10,6 +10,12 @@ Todo list:
 
 [x] Login
 
+[x] Forget Password
+
+[x] Reset Password
+
+[] Send reset password link through email
+
 [x] React-router
 
 [x] Styled-Components
@@ -26,7 +32,7 @@ Todo list:
 
 [ ] UX-flow website
 
-[ ] Api (products)
+[x] Api (products)
 
 [ ] Jest
 
@@ -36,4 +42,8 @@ Todo list:
 
 [x] Docker
 
+[] CI/CD Pipeline
+
 [ ] Email notification (payment + newsletter)
+
+
