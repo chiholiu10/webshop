@@ -34,10 +34,9 @@ app.post("/sendForm", (request, response) => {
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.log(error);
-      response.send('error');
+      response.json({ "message": 'Email not successfully sent' });
     } else {
-      console.log('Email sent ' + info.response);
-      response.send("success");
+      response.json({ "message": "Email successfully sent" });
     }
   });
 });
@@ -86,9 +85,38 @@ const generateAccessToken = (signinData) => {
   return jwt.sign(signinData, process.env.TOKEN_SECRET, { expiresIn: '1500s' });
 };
 
+const sendResetEmail = (email, link) => {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.USEREMAIL,
+      pass: process.env.GOOGLEGENERATEDPASSWORD
+    }
+  });
+
+  const mailOptions = {
+    from: process.env.USEREMAIL,
+    to: email,
+    subject: `Verify your email`,
+    text: `Check this email to reset your password<a href=${link} target="_blank"></a>`
+  };
+
+  transporter.sendMail(mailOptions, (error) => {
+    if (error) {
+      console.log(error);
+      console.log('email not sent');
+      // response.status(200).json({ "message": "Email not successfully sent" });
+    } else {
+      console.log('email sent');
+
+      // response.status(400).json({ "message": "successfully sent" });
+    }
+  });
+};
+
 app.post("/forget-password", async (request, response) => {
   const { email } = request.body;
-  await User.findOne({ email: email }).then((user) => {
+  User.findOne({ email: email }).then((user) => {
     const JWT_SECRET = "super secret";
     const secret = JWT_SECRET + user.password;
 
@@ -99,10 +127,12 @@ app.post("/forget-password", async (request, response) => {
 
     const token = jwt.sign(payload, secret, { expiresIn: "100h" });
     const link = `http://localhost:3000/reset-password/${user.id}/${token}`;
-    console.log(link);
-    response.status(200).json({ "message": `Reset password link has been sent to ${email}, please check your inbox ` + link });
+    sendResetEmail(user.email, link);
+    response.status(200).json({
+      "message": `Reset password link has been sent to ${email}, please check your inbox ` + `<a href=${link} />{ link }</a >`
+    });
   }).catch((err) => {
-    response.status(401).send("Email not exists");
+    response.status(401).json({ "message": "Email not exists" });
   });
 });
 
@@ -114,7 +144,6 @@ app.get("/reset-password/:id/:token", (request, response) => {
     const secret = JWT_SECRET + user.password;
     const payload = jwt.verify(token, secret);
 
-    console.log(payload);
     user.password = password;
     response.status(200).json({ "message": "Password successfully changed" });
   }).catch((err) => {
@@ -130,7 +159,6 @@ app.post("/reset-password/:id/:token", async (request, response) => {
     const secret = JWT_SECRET + user.password;
 
     const payload = jwt.verify(token, secret);
-    console.log(payload);
     user.password = password;
     response.status(200).json({ "message": "Password successfully changed" });
   }).catch((err) => {
@@ -156,9 +184,9 @@ app.post("/login", (request, response) => {
     });
 
     const refreshToken = jwt.sign(user.username, process.env.REFRESH_TOKEN_SECRET);
-    response.status(200).header('Access-Control-Allow-Credentials', true, "auth-token", token).json({ "token": token, "refreshToken": refreshToken });
+    response.status(200).header('Access-Control-Allow-Credentials', true, "auth-token", token).json({ "message": "Successfully logged in", "token": token, "refreshToken": refreshToken });
   }).catch((err) => {
-    response.status(401).send("Invalid Credentials");
+    response.status(401).json({ "message": "Invalid Credentials" });
   });
 });
 
@@ -177,7 +205,7 @@ app.post('/register', async (request, response) => {
     const emailExists = await User.find({ $or: [{ username: request.body.username }, { email: request.body.email }] });
     if (emailExists.length > 0 && emailExists !== null) {
       console.log("Email already exitsts");
-      return response.status(404).json({ message: "Email already exitsts" });
+      return response.status(404).json({ "message": "Email already exitsts" });
     }
 
     let user = new User({
@@ -187,10 +215,10 @@ app.post('/register', async (request, response) => {
     });
     user.save();
     console.log('Successfully registered"');
-    response.status(200).json({ message: "Successfully registered" });
+    response.status(200).json({ "message": "Successfully registered" });
   } catch (error) {
     console.log('User not added"');
-    response.status(400).json({ message: "User not added" });
+    response.status(400).json({ "message": "User not added" });
   }
 });
 
